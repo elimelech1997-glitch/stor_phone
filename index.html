@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CellPulse - חנות סלולר ומרכז שירות</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Heebo', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navigation -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold tracking-wider">📱 CellPulse</span>
+            </div>
+            <nav class="flex gap-6 items-center font-medium">
+                <button onclick="switchTab('shop')" id="nav-shop"
+                    class="hover:text-indigo-300 transition border-b-2 border-white pb-1">קטלוג מכשירים</button>
+                <button onclick="switchTab('tracker')" id="nav-tracker"
+                    class="hover:text-indigo-300 transition pb-1">מעקב מעבדה</button>
+                <button onclick="openCartModal()"
+                    class="relative bg-indigo-700 hover:bg-indigo-600 px-4 py-2 rounded-lg transition flex items-center gap-2">
+                    🛒 עגלה
+                    <span id="cart-count"
+                        class="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+
+        <!-- TAB 1: Shop & Catalog -->
+        <section id="tab-shop" class="space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm">
+                <h1 class="text-2xl font-bold text-gray-800">הסמארטפונים והאביזרים שלנו</h1>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <input type="text" id="search-input" placeholder="חפש דגם מכשיר..." oninput="filterProducts()"
+                        class="border px-4 py-2 rounded-lg w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <select id="brand-filter" onchange="filterProducts()"
+                        class="border px-4 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">כל המותגים</option>
+                        <option value="Apple">Apple</option>
+                        <option value="Samsung">Samsung</option>
+                        <option value="Xiaomi">Xiaomi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Dynamically Rendered Products -->
+            </div>
+        </section>
+
+        <!-- TAB 2: Repair Tracker -->
+        <section id="tab-tracker" class="hidden max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-sm space-y-6">
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl font-bold text-gray-800">מעקב תיקונים במעבדה</h2>
+                <p class="text-gray-500">הכנס מספר סידורי של המכשיר או תעודת זהות לבדיקת סטטוס התיקון</p>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="ticket-input" placeholder="לדוגמה: 1001 או תעודת זהות"
+                    class="border px-4 py-2 rounded-lg flex-grow focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button onclick="checkRepairStatus()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition font-medium">בדוק
+                    סטטוס</button>
+            </div>
+            <div id="tracker-result" class="hidden p-4 rounded-xl border border-indigo-100 bg-indigo-50/50 space-y-3">
+                <!-- Result populated via JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex justify-end">
+        <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col p-6">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h2 class="text-xl font-bold">עגלת הקניות שלך</h2>
+                <button onclick="closeCartModal()"
+                    class="text-gray-500 hover:text-gray-800 text-xl font-bold">✕</button>
+            </div>
+            <div id="cart-items" class="flex-grow overflow-y-auto py-4 space-y-4 divide-y">
+                <!-- Cart items list -->
+            </div>
+            <div class="border-t pt-4 space-y-4">
+                <div class="flex justify-between text-lg font-bold">
+                    <span>סה"כ לתשלום:</span>
+                    <span id="cart-total">₪0</span>
+                </div>
+                <button onclick="checkout()"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold transition shadow-md">בצע
+                    הזמנה</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-4 mt-auto">
+        <p class="text-sm">CellPulse Store & Service Hub &copy; 2026</p>
+    </footer>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Mock Database
+        const products = [
+            { id: 1, name: 'Samsung Galaxy S25 Ultra', brand: 'Samsung', price: 4799, specs: '12GB RAM | 256GB', image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=400&q=80' },
+            { id: 2, name: 'iPhone 16 Pro Max', brand: 'Apple', price: 5499, specs: '8GB RAM | 256GB', image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=400&q=80' },
+            { id: 3, name: 'Xiaomi 14 Ultra', brand: 'Xiaomi', price: 3899, specs: '16GB RAM | 512GB', image: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=400&q=80' },
+            { id: 4, name: 'Samsung Galaxy A55', brand: 'Samsung', price: 1699, specs: '8GB RAM | 128GB', image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80' },
+            { id: 5, name: 'iPhone 15', brand: 'Apple', price: 3399, specs: '6GB RAM | 128GB', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80' }
+        ];
+
+        // Mock Repair Tickets Database
+        const repairTickets = {
+            "1001": { customer: "ישראל ישראלי", device: "iPhone 15 Pro", issue: "החלפת מסך מקורי", status: "בבדיקה", date: "15/11/2026" },
+            "1002": { customer: "שרה כהן", device: "Samsung Galaxy S24", issue: "החלפת סוללה", status: "התיקון הושלם - מוכן לאיסוף", date: "14/11/2026" },
+            "1003": { customer: "דוד לוי", device: "Xiaomi 13", issue: "תיקון שקע טעינה", status: "התקבל במעבדה", date: "16/11/2026" }
+        };
+
+        // State Management
+        let cart = JSON.parse(localStorage.getItem('cellpulse_cart')) || [];
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts(products);
+            updateCartCount();
+        });
+
+        // Tab Navigation Switcher
+        function switchTab(tabName) {
+            const shopSection = document.getElementById('tab-shop');
+            const trackerSection = document.getElementById('tab-tracker');
+            const navShop = document.getElementById('nav-shop');
+            const navTracker = document.getElementById('nav-tracker');
+
+            if (tabName === 'shop') {
+                shopSection.classList.remove('hidden');
+                trackerSection.classList.add('hidden');
+                navShop.classList.add('border-b-2', 'border-white');
+                navTracker.classList.remove('border-b-2', 'border-white');
+            } else {
+                shopSection.classList.add('hidden');
+                trackerSection.classList.remove('hidden');
+                navTracker.classList.add('border-b-2', 'border-white');
+                navShop.classList.remove('border-b-2', 'border-white');
+            }
+        }
+
+        // Render Product Catalog
+        function renderProducts(items) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            if (items.length === 0) {
+                grid.innerHTML = `<p class="col-span-full text-center text-gray-500 py-10">לא נמצאו מוצרים תואמים.</p>`;
+                return;
+            }
+
+            items.forEach(product => {
+                grid.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden border border-gray-100 flex flex-col">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover bg-gray-100">
+                        <div class="p-4 flex flex-col flex-grow">
+                            <span class="text-xs text-indigo-600 font-semibold uppercase tracking-wider">${product.brand}</span>
+                            <h3 class="font-bold text-lg text-gray-800 mt-1">${product.name}</h3>
+                            <p class="text-xs text-gray-500 mt-1">${product.specs}</p>
+                            <div class="mt-auto pt-4 flex justify-between items-center">
+                                <span class="text-xl font-bold text-gray-900">₪${product.price.toLocaleString()}</span>
+                                <button onclick="addToCart(${product.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">הוסף לעגלה</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Filter Products by Search & Brand
+        function filterProducts() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const brand = document.getElementById('brand-filter').value;
+
+            const filtered = products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(query);
+                const matchesBrand = brand === 'all' || p.brand === brand;
+                return matchesSearch && matchesBrand;
+            });
+
+            renderProducts(filtered);
+        }
+
+        // Cart Actions
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            saveCart();
+            updateCartCount();
+            openCartModal();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            saveCart();
+            updateCartCount();
+            renderCartItems();
+        }
+
+        function changeQuantity(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    saveCart();
+                    updateCartCount();
+                    renderCartItems();
+                }
+            }
+        }
+
+        function saveCart() {
+            localStorage.setItem('cellpulse_cart', JSON.stringify(cart));
+        }
+
+        function updateCartCount() {
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').innerText = totalCount;
+        }
+
+        // Cart Modal Control
+        function openCartModal() {
+            renderCartItems();
+            document.getElementById('cart-modal').classList.remove('hidden');
+        }
+
+        function closeCartModal() {
+            document.getElementById('cart-modal').classList.add('hidden');
+        }
+
+        function renderCartItems() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+
+            if (cart.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-10">העגלה שלך ריקה.</p>`;
+                document.getElementById('cart-total').innerText = '₪0';
+                return;
+            }
+
+            let total = 0;
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+                container.innerHTML += `
+                    <div class="py-3 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <img src="${item.image}" class="w-12 h-12 object-cover rounded-lg bg-gray-100">
+                            <div>
+                                <h4 class="font-bold text-sm">${item.name}</h4>
+                                <span class="text-xs text-gray-500">₪${item.price} ליח'</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeQuantity(${item.id}, -1)" class="w-7 h-7 bg-gray-200 rounded-md font-bold hover:bg-gray-300">-</button>
+                            <span class="text-sm font-semibold">${item.quantity}</span>
+                            <button onclick="changeQuantity(${item.id}, 1)" class="w-7 h-7 bg-gray-200 rounded-md font-bold hover:bg-gray-300">+</button>
+                            <button onclick="removeFromCart(${item.id})" class="text-red-500 hover:text-red-700 mr-2 text-sm">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('cart-total').innerText = `₪${total.toLocaleString()}`;
+        }
+
+        function checkout() {
+            if (cart.length === 0) return;
+            alert('ההזמנה בוצעה בהצלחה! תודה שקנית ב-CellPulse.');
+            cart = [];
+            saveCart();
+            updateCartCount();
+            closeCartModal();
+        }
+
+        // Repair Tracker Logic
+        function checkRepairStatus() {
+            const ticketId = document.getElementById('ticket-input').value.trim();
+            const resultBox = document.getElementById('tracker-result');
+
+            if (!ticketId) {
+                alert('אנא הזן מספר כרטיס או מזהה');
+                return;
+            }
+
+            const ticket = repairTickets[ticketId];
+            resultBox.classList.remove('hidden');
+
+            if (ticket) {
+                let badgeColor = 'bg-yellow-100 text-yellow-800';
+                if (ticket.status.includes('הושלם')) badgeColor = 'bg-green-100 text-green-800';
+                if (ticket.status.includes('בבדיקה')) badgeColor = 'bg-blue-100 text-blue-800';
+
+                resultBox.innerHTML = `
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-bold text-gray-700">לקוח: ${ticket.customer}</span>
+                        <span class="text-xs px-2.5 py-1 rounded-full font-bold ${badgeColor}">${ticket.status}</span>
+                    </div>
+                    <div class="text-sm space-y-1 pt-1 text-gray-600">
+                        <p><strong>דגם מכשיר:</strong> ${ticket.device}</p>
+                        <p><strong>תיקון מבוקש:</strong> ${ticket.issue}</p>
+                        <p><strong>תאריך קבלה:</strong> ${ticket.date}</p>
+                    </div>
+                `;
+            } else {
+                resultBox.innerHTML = `<p class="text-red-600 text-center font-medium">לא נמצא תיקון המשוייך למספר זה. בדוק שוב את המספר שהוזן (נסה למשל: 1001, 1002 או 1003).</p>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
